@@ -9,6 +9,7 @@
  */
 
 export interface Env {
+	AUTH_KEY_SECRET:string
 	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
 	// MY_KV_NAMESPACE: KVNamespace;
 	//
@@ -28,7 +29,7 @@ export interface Env {
 const ALLOW_LIST=['cat-pic.jpg']
 
 const hasValidHeader=(request: Request,env:Env)=>{
-	return request.headers.get('X-Custom-Auth-Key') === 'MY-SECRET-HERE';
+	return request.headers.get('X-Custom-Auth-Key') === env.AUTH_KEY_SECRET;
 }
 
 function authorizeRequest(request:Request, env:Env, key: string){

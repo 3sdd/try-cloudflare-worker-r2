@@ -25,15 +25,41 @@ export interface Env {
 	// MY_QUEUE: Queue;
 }
 
+const ALLOW_LIST=['cat-pic.jpg']
+
+const hasValidHeader=(request: Request,env:Env)=>{
+	return request.headers.get('X-Custom-Auth-Key') === 'MY-SECRET-HERE';
+}
+
+function authorizeRequest(request:Request, env:Env, key: string){
+	switch(request.method){
+		case 'PUT':
+		case 'DELETE':
+			return hasValidHeader(request,env)
+		case 'GET':
+			return ALLOW_LIST.includes(key)
+		default:
+			return false;
+	}
+}
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url=new URL(request.url);
 		const key=url.pathname.slice(1)
 
+		if(!authorizeRequest(request,env,key)){
+			return new Response('Forbidden',{status:403})
+		}
 		switch(request.method){
 			case 'PUT':
-				await env.MY_BUCKET.put(key,request.body);
-        return new Response(`Put ${key} successfully!`);
+				const obj=await env.MY_BUCKET.put(key,request.body,{
+					httpMetadata:request.headers
+				});
+        return new Response(`Put ${key} successfully!`,{
+					headers:{
+						'etag':obj.httpEtag
+					}
+				});
 			case 'GET':
 				const object=await env.MY_BUCKET.get(key)
 
